@@ -228,3 +228,25 @@ final selectedMonthBudgetProvider =
   }
 });
 
+
+/// Transactions for the 7 days starting [weekStart] (a date with no time).
+/// Fetched separately so a week that crosses a cycle boundary is complete.
+final weekExpensesProvider = FutureProvider.autoDispose
+    .family<List<ExpenseModel>, DateTime>((ref, weekStart) async {
+  // Re-fetch after transactions are added or deleted.
+  ref.watch(currentMonthExpensesProvider.select((s) => s.valueOrNull));
+  ref.watch(selectedMonthExpensesProvider.select((s) => s.valueOrNull));
+  final end = DateTime(weekStart.year, weekStart.month, weekStart.day + 6);
+  return ref.watch(expenseRepositoryProvider).getExpensesInRange(weekStart, end);
+});
+
+/// Transactions for the cycle before the selected one, for comparisons.
+final previousCycleExpensesProvider =
+    FutureProvider.autoDispose<List<ExpenseModel>>((ref) async {
+  final selected = ref.watch(selectedMonthProvider);
+  final cycleStartDay = ref.watch(cycleStartDayProvider);
+  final previous = DateTime(selected.year, selected.month - 1);
+  return ref
+      .watch(expenseRepositoryProvider)
+      .getExpensesForMonth(previous.month, previous.year, cycleStartDay);
+});

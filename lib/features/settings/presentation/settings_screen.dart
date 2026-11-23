@@ -212,6 +212,14 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.sm),
 
                   _SettingsTile(
+                    icon: Icons.receipt_long_rounded,
+                    label: 'Bills & Subscriptions',
+                    subtitle: 'Rent, recharges and subscriptions set aside each cycle',
+                    onTap: () => context.push('/bills'),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+
+                  _SettingsTile(
                     icon: Icons.category_rounded,
                     label: 'Manage Categories',
                     subtitle: 'Custom expense categories',

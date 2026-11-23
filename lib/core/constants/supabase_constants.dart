@@ -17,4 +17,5 @@ class SupabaseConstants {
   static const String expensesTable = 'expenses';
   static const String customCategoriesTable = 'custom_categories';
   static const String monthlySummariesTable = 'monthly_summaries';
+  static const String recurringBillsTable = 'recurring_bills';
 }

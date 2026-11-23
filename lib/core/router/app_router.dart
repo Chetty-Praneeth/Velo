@@ -11,6 +11,7 @@ import '../../features/expenses/presentation/manage_categories_screen.dart';
 import '../../features/expenses/presentation/expense_list_screen.dart';
 import '../../features/insights/presentation/insights_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/bills/presentation/recurring_bills_screen.dart';
 import '../widgets/glass_bottom_nav.dart';
 
 /// Shell for the main app with bottom navigation.
@@ -48,7 +49,8 @@ class _AppShellState extends ConsumerState<AppShell> {
         },
       ),
       extendBody: true,
-      floatingActionButton: _currentIndex != 3
+      // Home has its own Add expense / Add income buttons.
+      floatingActionButton: _currentIndex == 1 || _currentIndex == 2
           ? FloatingActionButton(
               onPressed: () => context.push('/add-expense'),
               child: const Icon(Icons.add_rounded, size: 28),
@@ -99,6 +101,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/manage-categories',
         builder: (context, state) => const ManageCategoriesScreen(),
+      ),
+
+      // Bills & Subscriptions
+      GoRoute(
+        path: '/bills',
+        builder: (context, state) => const RecurringBillsScreen(),
       ),
 
       // Add Expense (full screen modal)

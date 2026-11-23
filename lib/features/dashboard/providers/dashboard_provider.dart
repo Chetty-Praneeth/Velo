@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/cycle_provider.dart';
-import '../../../core/utils/date_utils.dart';
-import '../../../core/utils/math_utils.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/expenses/providers/expense_provider.dart';
 import '../../../features/expenses/data/models/expense_model.dart';
+import '../../bills/providers/recurring_bill_provider.dart';
 import '../data/dashboard_repository.dart';
+import '../domain/dashboard_state.dart';
+
+export '../domain/dashboard_state.dart';
 
 /// Provider for the DashboardRepository.
 final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
@@ -56,121 +58,25 @@ class BudgetNotifier
   }
 }
 
-/// Combined dashboard state — all derived metrics.
-class DashboardState {
-  final double monthlyAllowance;
-  final double savingsGoal;
-  final double spendableBudget;
-  final double totalSpent;
-  final double totalIncome;
-  final double todaySpent;
-  final double remainingBalance;
-  final int daysRemaining;
-  final int daysElapsed;
-  final double safeDailySpend;
-  final double averageDailySpend;
-  final double spendPercentage;
-  final double predictedEndBalance;
-  final bool isSavingsOnTrack;
-  final double dailyReductionNeeded;
-  final double monthProgress;
-
-  const DashboardState({
-    required this.monthlyAllowance,
-    required this.savingsGoal,
-    required this.spendableBudget,
-    required this.totalSpent,
-    required this.totalIncome,
-    required this.todaySpent,
-    required this.remainingBalance,
-    required this.daysRemaining,
-    required this.daysElapsed,
-    required this.safeDailySpend,
-    required this.averageDailySpend,
-    required this.spendPercentage,
-    required this.predictedEndBalance,
-    required this.isSavingsOnTrack,
-    required this.dailyReductionNeeded,
-    required this.monthProgress,
-  });
-
-  factory DashboardState.empty() {
-    return const DashboardState(
-      monthlyAllowance: 0,
-      savingsGoal: 0,
-      spendableBudget: 0,
-      totalSpent: 0,
-      totalIncome: 0,
-      todaySpent: 0,
-      remainingBalance: 0,
-      daysRemaining: 30,
-      daysElapsed: 0,
-      safeDailySpend: 0,
-      averageDailySpend: 0,
-      spendPercentage: 0,
-      predictedEndBalance: 0,
-      isSavingsOnTrack: true,
-      dailyReductionNeeded: 0,
-      monthProgress: 0,
-    );
-  }
-}
-
-/// Provider that computes the full dashboard state from budget + expenses.
+/// Provider that computes the full dashboard state from budget, expenses
+/// and bills.
 final dashboardStateProvider = Provider<DashboardState>((ref) {
   final cycleStartDay = ref.watch(cycleStartDayProvider);
   final budgetAsync = ref.watch(currentBudgetProvider);
-  final totalSpent = ref.watch(totalSpentProvider);
-  final totalIncome = ref.watch(totalIncomeProvider);
-  final todaySpent = ref.watch(todaySpentProvider);
+  final expenses =
+      ref.watch(currentMonthExpensesProvider).valueOrNull ?? const [];
+  final bills = ref.watch(billStatusesProvider);
 
   return budgetAsync.when(
     data: (budget) {
       if (budget == null) return DashboardState.empty();
-
-      final spendable = budget.spendableBudget;
-      final remaining = spendable + totalIncome - totalSpent;
-      final daysLeft = AppDateUtils.daysRemainingInCycle(DateTime.now(), cycleStartDay);
-      final daysElapsed = AppDateUtils.daysElapsedInCycle(DateTime.now(), cycleStartDay);
-      final safeDailySpend =
-          MathUtils.safeDailySpend(remaining, daysLeft);
-      final avgDailySpend =
-          MathUtils.averageDailySpend(totalSpent, daysElapsed);
-      final spendPct =
-          MathUtils.spendPercentage(totalSpent, spendable);
-      final predicted = MathUtils.predictedMonthEndBalance(
-        remainingBalance: remaining,
-        avgDailySpend: avgDailySpend,
-        daysRemaining: daysLeft,
-      );
-      final onTrack = MathUtils.isSavingsOnTrack(
-        remainingBalance: remaining,
-        avgDailySpend: avgDailySpend,
-        daysRemaining: daysLeft,
-      );
-      final reductionNeeded = MathUtils.dailyReductionNeeded(
-        remainingBalance: remaining,
-        safeDailySpend: safeDailySpend,
-        avgDailySpend: avgDailySpend,
-      );
-
-      return DashboardState(
+      return DashboardState.compute(
         monthlyAllowance: budget.monthlyAllowance,
         savingsGoal: budget.savingsGoal,
-        spendableBudget: spendable,
-        totalSpent: totalSpent,
-        totalIncome: totalIncome,
-        todaySpent: todaySpent,
-        remainingBalance: remaining,
-        daysRemaining: daysLeft,
-        daysElapsed: daysElapsed,
-        safeDailySpend: safeDailySpend,
-        averageDailySpend: avgDailySpend,
-        spendPercentage: spendPct,
-        predictedEndBalance: predicted,
-        isSavingsOnTrack: onTrack,
-        dailyReductionNeeded: reductionNeeded,
-        monthProgress: AppDateUtils.cycleProgress(DateTime.now(), cycleStartDay),
+        expenses: expenses,
+        bills: bills,
+        now: DateTime.now(),
+        cycleStartDay: cycleStartDay,
       );
     },
     loading: () => DashboardState.empty(),

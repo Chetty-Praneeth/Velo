@@ -9,6 +9,9 @@ class ExpenseModel {
   final DateTime createdAt;
   final String type;
 
+  /// Set when this expense is the payment of a recurring bill.
+  final String? recurringBillId;
+
   const ExpenseModel({
     required this.id,
     required this.userId,
@@ -18,7 +21,18 @@ class ExpenseModel {
     required this.expenseDate,
     required this.createdAt,
     this.type = 'expense',
+    this.recurringBillId,
   });
+
+  bool get isExpense => type == 'expense';
+  bool get isIncome => type == 'income';
+
+  /// Everyday spending: an expense that isn't a bill payment. Only these
+  /// count against the safe daily spend.
+  bool get isEverydaySpend => isExpense && recurringBillId == null;
+
+  /// A logged payment of a recurring bill.
+  bool get isBillPayment => isExpense && recurringBillId != null;
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
     return ExpenseModel(
@@ -30,6 +44,7 @@ class ExpenseModel {
       expenseDate: DateTime.parse(json['expense_date'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
       type: json['type'] as String? ?? 'expense',
+      recurringBillId: json['recurring_bill_id'] as String?,
     );
   }
 
@@ -43,6 +58,7 @@ class ExpenseModel {
       'expense_date': expenseDate.toIso8601String().split('T').first,
       'created_at': createdAt.toIso8601String(),
       'type': type,
+      if (recurringBillId != null) 'recurring_bill_id': recurringBillId,
     };
   }
 
@@ -55,6 +71,7 @@ class ExpenseModel {
       'note': note,
       'expense_date': expenseDate.toIso8601String().split('T').first,
       'type': type,
+      if (recurringBillId != null) 'recurring_bill_id': recurringBillId,
     };
   }
 
@@ -77,6 +94,7 @@ class ExpenseModel {
       expenseDate: expenseDate ?? this.expenseDate,
       createdAt: createdAt ?? this.createdAt,
       type: type ?? this.type,
+      recurringBillId: recurringBillId,
     );
   }
 

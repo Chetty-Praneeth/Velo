@@ -18,6 +18,7 @@ class ExpenseRepository {
     String? note,
     DateTime? date,
     String type = 'expense',
+    String? recurringBillId,
   }) async {
     final data = {
       'user_id': _userId,
@@ -26,6 +27,9 @@ class ExpenseRepository {
       'note': note,
       'expense_date': (date ?? DateTime.now()).toIso8601String().split('T').first,
       'type': type,
+      // Only sent for bill payments, so normal expenses keep working on a
+      // database that hasn't run migration 003 yet.
+      if (recurringBillId != null) 'recurring_bill_id': recurringBillId,
     };
 
     final response = await _client
